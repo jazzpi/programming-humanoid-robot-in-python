@@ -33,11 +33,10 @@ class PIDController(object):
         self.u = np.zeros(size)
         self.e1 = np.zeros(size)
         self.e2 = np.zeros(size)
-        # ADJUST PARAMETERS BELOW
-        delay = 0
-        self.Kp = 0
-        self.Ki = 0
-        self.Kd = 0
+        delay = 2  # TODO: Do I even use this?
+        self.Kp = 50.0
+        self.Ki = 0.1
+        self.Kd = 0.25
         self.y = deque(np.zeros(size), maxlen=delay + 1)
 
     def set_delay(self, delay):
@@ -52,7 +51,17 @@ class PIDController(object):
         @param sensor: current values from sensor
         @return control signal
         '''
-        # YOUR CODE HERE
+        # This could be in the constructor, but that doesn't work with the
+        # interaction in the notebook
+        self.K1 = self.Kp + self.Ki * self.dt + self.Kd / self.dt
+        self.K2 = self.Kp + 2 * self.Kd / self.dt
+        self.K3 = self.Kd / self.dt
+
+        e = target - sensor
+        self.u += self.K1 * e - self.K2 * self.e1 + self.K3 * self.e2
+
+        self.e2 = self.e1
+        self.e1 = e
 
         return self.u
 
