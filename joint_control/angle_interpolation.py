@@ -87,7 +87,7 @@ class AngleInterpolationAgent(PIDAgent):
         for joint in names:
             val = perception.joint.get(joint, None)
             if val is None:
-                print("WARN: joint {} is not in perception!".format(joint))
+                # print("WARN: joint {} is not in perception!".format(joint))
                 val = 0
             self.initial_angles[joint] = val
 
