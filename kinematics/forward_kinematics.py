@@ -26,6 +26,7 @@ import numpy as np
 from numpy.matlib import matrix, identity
 
 from angle_interpolation import AngleInterpolationAgent
+from keyframes import hello
 
 
 class ForwardKinematicsAgent(AngleInterpolationAgent):
@@ -178,20 +179,23 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
 
         return T
 
+    def _forward_kinematics_for(self, effector, angles):
+        T = identity(4)
+        for joint in self.chains[effector]:
+            angle = angles[joint]
+            Tl = self.local_trans(joint, angle)
+            T *= Tl
+            yield T.copy()
+
     def forward_kinematics(self, joints):
         '''forward kinematics
 
         :param joints: {joint_name: joint_angle}
         '''
-        for chain_joints in self.chains.values():
-            T = identity(4)
-            for joint in chain_joints:
-                angle = joints[joint]
-                Tl = self.local_trans(joint, angle)
-                T *= Tl
-
-                self.transforms[joint] = T.copy()
-                T_ = T.round(2)
+        for effector, joint_names in self.chains.iteritems():
+            for joint, T in zip(joint_names,
+                                self._forward_kinematics_for(effector, joints)):
+                self.transforms[joint] = T
 
 
 def plot(agent):
@@ -199,6 +203,9 @@ def plot(agent):
     ax = Axes3D(fig)
 
     xs, ys, zs = [], [], []
+
+    print('RElbowRoll:')
+    print(agent.transforms['RElbowRoll'].round(2))
 
     for chain_joints in agent.chains.values():
         for joint in chain_joints:
@@ -219,6 +226,7 @@ def plot(agent):
 
 if __name__ == '__main__':
     agent = ForwardKinematicsAgent()
+    agent.keyframes = hello()
     try:
         agent.run()
     except KeyboardInterrupt:
