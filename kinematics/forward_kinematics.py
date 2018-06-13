@@ -206,6 +206,8 @@ def plot(agent):
 
     print('RElbowRoll:')
     print(agent.transforms['RElbowRoll'].round(2))
+    print('LElbowRoll:')
+    print(agent.transforms['LElbowRoll'].round(2))
 
     for chain_joints in agent.chains.values():
         for joint in chain_joints:

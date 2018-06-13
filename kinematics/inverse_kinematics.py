@@ -45,22 +45,33 @@ class InverseKinematicsAgent(ForwardKinematicsAgent):
         rot_err = abs(1 - abs(det(rot_err)))  # Determinant should thus be 1/-1
         trans_err = norm(T[0:3, 3:4] - target[0:3, 3:4])
 
-        return rot_err * 100 + trans_err  # Rotation is more important than translation
+        return rot_err * 1000 + trans_err  # Rotation is more important than translation
 
     def set_transforms(self, effector_name, transform):
         '''solve the inverse kinematics and control joints use the results'''
         angles = self.inverse_kinematics(effector_name, transform)
         targeted_joints = self.chains[effector_name]
 
+        old_names, old_times, old_keys = self.keyframes
         names, times, keys = [], [], []
 
         for joint in self.joint_names:
             names.append(joint)
-            times.append([5.0, 8.0])
-
             joint_angles = (0.0, 0.0)
+
             if joint in targeted_joints:
+                # TODO: This shouldn't be hardcoded, but set to some point in
+                # the future
+                times.append([5.0, 8.0])
                 joint_angles = (0.0, angles[joint])
+            elif joint in old_names:
+                old_id = old_names.index(joint)
+                times.append(old_times[old_id])
+                keys.append(old_keys[old_id])
+                continue
+            else:
+                times.append([5.0, 8.0])
+
             keys.append([[joint_angles[0], [3, -1, 0], [3, 1, 0]],
                          [joint_angles[1], [3, -1, 0], [3, 1, 0]]])
 
@@ -70,9 +81,14 @@ if __name__ == '__main__':
     agent = InverseKinematicsAgent()
     # test inverse kinematics
     # Snapshot taken from hello animation
-    T = matrix([[ 1.6000e-01, -2.7000e-01, -9.5000e-01,  1.8830e+01],
-                [-6.7000e-01,  6.7000e-01, -3.1000e-01, -1.9234e+02],
-                [ 7.2000e-01,  6.9000e-01, -7.0000e-02,  1.4467e+02],
-                [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  1.0000e+00]])
-    agent.set_transforms('RArm', T)
+    LArm = matrix([[ 7.8000e-01,  3.8000e-01,  4.9000e-01,  6.5870e+01],
+                   [-6.2000e-01,  5.0000e-01,  6.1000e-01,  1.3625e+02],
+                   [-1.0000e-02, -7.8000e-01,  6.3000e-01,  2.6190e+01],
+                   [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  1.0000e+00]])
+    RArm = matrix([[ 1.6000e-01, -2.7000e-01, -9.5000e-01,  1.8830e+01],
+                   [-6.7000e-01,  6.7000e-01, -3.1000e-01, -1.9234e+02],
+                   [ 7.2000e-01,  6.9000e-01, -7.0000e-02,  1.4467e+02],
+                   [ 0.0000e+00,  0.0000e+00,  0.0000e+00,  1.0000e+00]])
+    agent.set_transforms('LArm', LArm)
+    agent.set_transforms('RArm', RArm)
     agent.run()
