@@ -9,9 +9,10 @@
        and test your inverse kinematics implementation.
 '''
 
-from numpy.matlib import identity, matrix
+import numpy as np
 from numpy.linalg import det, norm
-from scipy.optimize import fmin
+from numpy.matlib import identity, matrix
+from scipy.optimize import fmin_cg
 
 from forward_kinematics import ForwardKinematicsAgent
 
@@ -26,7 +27,7 @@ class InverseKinematicsAgent(ForwardKinematicsAgent):
         x0 = [0] * len(self.chains[effector_name])
 
         print('Starting optimization...')
-        xopt = fmin(self._error_func, x0, args=(effector_name, transform))
+        xopt = fmin_cg(self._error_func, x0, args=(effector_name, transform))
         print('Done with optimization!')
 
         return dict(zip(self.chains[effector_name], xopt))
@@ -41,11 +42,11 @@ class InverseKinematicsAgent(ForwardKinematicsAgent):
     def _error_func(self, thetas, effector, target):
         angles = dict(zip(self.chains[effector], thetas))
         T = self._last(self._forward_kinematics_for(effector, angles))
-        rot_err = T * target.T  # Should be identity
-        rot_err = abs(1 - abs(det(rot_err)))  # Determinant should thus be 1/-1
+        rot_err = T[0:3, 0:3] * target.T[0:3, 0:3]  # Should be identity
+        rot_err = np.sum(abs(rot_err - identity(3)))
         trans_err = norm(T[0:3, 3:4] - target[0:3, 3:4])
 
-        return rot_err * 1000 + trans_err  # Rotation is more important than translation
+        return rot_err * 10 + trans_err  # Rotation is more important than translation
 
     def set_transforms(self, effector_name, transform):
         '''solve the inverse kinematics and control joints use the results'''
